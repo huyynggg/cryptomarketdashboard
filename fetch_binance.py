@@ -2,6 +2,9 @@ from binance.client import Client
 import pandas as pd
 from datetime import datetime
 import time
+import os
+from pydrive2.auth import GoogleAuth
+from pydrive2.drive import GoogleDrive
 
 client = Client()
 
@@ -20,7 +23,7 @@ for sym in pairs:
         "qav", "num_trades", "taker_base_vol", "taker_quote_vol", "ignore"
     ])
     df["pair"] = sym
-    df["datetime"] = pd.to_datetime(df["close_time"], unit="ms", utc=True)
+    df["datetime"] = pd.to_datetime(df["close_time"], unit="ms")
     df["close"] = df["close"].astype(float) 
     df = df[["datetime", "pair", "close"]].sort_values("datetime") 
     frames.append(df)
@@ -53,17 +56,44 @@ def fetch_latest_data(pair="BTCUSDT", interval="1m", limit=60):
         "open_time", "open", "high", "low", "close", "volume",
         "close_time", "qav", "num_trades", "taker_base_vol", "taker_quote_vol", "ignore"
     ])
+    df["pair"]=pair 
     df["datetime"] = pd.to_datetime(df["close_time"], unit="ms")
     df["close"] = df["close"].astype(float)
-    return df[["datetime", "close"]]
+    return df[["datetime", "pair", "close"]]
 
 if __name__ == "__main__":
     print("🚀 Starting live data fetch loop (Ctrl + C to stop)")
     while True:
         for sym in pairs:
-            
             live_data = fetch_latest_data(sym)
             filename = f"data/live_data{sym.lower()}.csv"
             live_data.to_csv(filename, index=False)
             print(f"✅ Updated {sym} at {live_data['datetime'].iloc[-1]}")
+
+        #Paths
+        live_eth_path = "data/live_dataethusdt.csv"
+        live_btc_path = "data/live_databtcusdt.csv"
+        merged_path = "data/livemarket.csv"
+
+        #Read both files
+        liveeth=pd.read_csv(live_eth_path)
+        livebtc=pd.read_csv(live_btc_path)
+
+        #Combine and drop duplicates
+        merged= pd.concat([liveeth, livebtc], ignore_index=True)
+        merged["datetime"] = pd.to_datetime(merged["datetime"])
+
+        #Save merged files
+        os.makedirs("data", exist_ok=True)
+        merged.to_csv(merged_path, index=False)
+
+        print(f"Save merged BTC data to {merged_path}")
+
+        # Authenticate once
+        gauth = GoogleAuth()
+        gauth.LocalWebserverAuth()
+        drive = GoogleDrive(gauth)
+        folder_id = "1Y7pk5VUKTwXp38ZeL2BVVaX9xXrugz8A" 
+
+        
         time.sleep(60)  # fetch new data every 60 seconds
