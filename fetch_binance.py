@@ -3,8 +3,6 @@ import pandas as pd
 from datetime import datetime
 import time
 import os
-from pydrive2.auth import GoogleAuth
-from pydrive2.drive import GoogleDrive
 
 client = Client()
 
@@ -88,12 +86,4 @@ if __name__ == "__main__":
         merged.to_csv(merged_path, index=False)
 
         print(f"Save merged BTC data to {merged_path}")
-
-        # Authenticate once
-        gauth = GoogleAuth()
-        gauth.LocalWebserverAuth()
-        drive = GoogleDrive(gauth)
-        folder_id = "1Y7pk5VUKTwXp38ZeL2BVVaX9xXrugz8A" 
-
-        
         time.sleep(60)  # fetch new data every 60 seconds
